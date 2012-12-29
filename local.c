@@ -17,6 +17,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #include "local.h"
 #include "socks5.h"
@@ -604,6 +605,80 @@ static void accept_cb (EV_P_ ev_io *w, int revents)
     }
 }
 
+static const char *saved_pidfile;
+
+static void remove_pidfile()
+{
+    if(saved_pidfile)
+        unlink(saved_pidfile);
+}
+
+static void signal_term_handler()
+{
+    remove_pidfile();
+    exit(0);
+}
+
+static bool create_pidfile(const char* pidfile)
+{
+    FILE *file = fopen(pidfile, "w");
+    if(file == NULL)
+           return false;
+
+    fprintf(file, "%d\n", getpid());
+    fclose(file);
+
+    // register delete action to atexit
+    saved_pidfile = pidfile;
+    atexit(remove_pidfile);
+    return true;
+}
+
+
+static void try_daemonize(const char* pidfile)
+{
+    //fork using daemon function
+    if(daemon(0, 0) != 0) {
+
+        LOG_error("Daemon call failed, code %d (%s)",
+                      errno, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    // fork for second time according to APUE
+    pid_t pid = fork();
+    if(pid < 0) {
+        LOG_error("Second fork failed, code %d (%s)",
+                      errno, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    if(pid > 0)
+        exit(EXIT_SUCCESS);
+
+    umask(0);
+
+    /* create pid file */
+    if(pidfile == NULL)
+        pidfile = "/var/run/shadownsocks.pid";
+    if(!create_pidfile(pidfile)) {
+        LOG_error("Can't open pidfile: code %d (%s)",
+                       errno, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    /* register signal handler*/
+    struct sigaction action;
+    memset (&action, 0, sizeof(action));
+    action.sa_handler = signal_term_handler;
+
+    if (sigaction(SIGTERM, &action, 0)) {
+        LOG_error("Signal action registering error, code %d (%s)",
+                     errno, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+
+
 static void print_usage() {
     printf("usage: ss  -s server_host -p server_port -l local_port\n");
     printf("           -k password [-m encrypt_method] [-f pid_file]\n");
@@ -662,53 +737,14 @@ int main (int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
+    /*  init log */
+    LOG_init(argv[0]);
+
     if (f_flags) {
-
-        if (f_path == NULL) {
-            print_usage();
-            exit(EXIT_FAILURE);
-        }
-
-        /* Our process ID and Session ID */
-        pid_t pid, sid;
-
-        /* Fork off the parent process */
-        pid = fork();
-        if (pid < 0) {
-            exit(EXIT_FAILURE);
-        }
-        /* If we got a good PID, then
-           we can exit the parent process. */
-        if (pid > 0) {
-            FILE *file = fopen(f_path, "w");
-            fprintf(file, "%d", pid);
-            fclose(file);
-            exit(EXIT_SUCCESS);
-        }
-
-        /* Change the file mode mask */
-        umask(0);
-
-        /* Open any logs here */        
-
-        /* Create a new SID for the child process */
-        sid = setsid();
-        if (sid < 0) {
-            /* Log the failure */
-            exit(EXIT_FAILURE);
-        }
-
-
-        /* Change the current working directory */
-        if ((chdir("/")) < 0) {
-            /* Log the failure */
-            exit(EXIT_FAILURE);
-        }
-
-        /* Close out the standard file descriptors */
-        close(STDIN_FILENO);
-        close(STDOUT_FILENO);
-        close(STDERR_FILENO);
+        try_daemonize(0);
+    }
+    else {
+        LOG_setStderrMode(1);
     }
 
     // init global variables
@@ -750,6 +786,8 @@ int main (int argc, char **argv)
     ev_io_init (&listen_ctx.io, accept_cb, listenfd, EV_READ);
     ev_io_start (loop, &listen_ctx.io);
     ev_run (loop, 0);
+
+    LOG_exit();
     return 0;
 }
 
