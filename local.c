@@ -676,7 +676,7 @@ static void try_daemonize(const char* pidfile)
                      errno, strerror(errno));
         exit(EXIT_FAILURE);
     }
-
+}
 
 
 static void print_usage() {
@@ -686,6 +686,90 @@ static void print_usage() {
     printf("info:\n");
     printf("       encrypt_method:  table, rc4\n");
     printf("       pid_file:        valid path to the pid file\n");
+}
+
+static const char *saved_pidfile;
+
+static void remove_pidfile()
+{
+    if(saved_pidfile)
+        unlink(saved_pidfile);
+}
+
+static void signal_term_handler()
+{
+    remove_pidfile();
+    exit(0);
+}
+
+static bool create_pidfile(const char* pidfile)
+{
+    FILE *file = fopen(pidfile, "w");
+    if(file == NULL)
+           return false;
+
+    fprintf(file, "%d\n", getpid());
+    fclose(file);
+
+    // register delete action to atexit
+    saved_pidfile = pidfile;
+    atexit(remove_pidfile);
+    return true;
+}
+
+
+static void try_daemonize(const char* pidfile)
+{
+    //fork using daemon function
+    if(daemon(0, 0) != 0) {
+
+        LOG_error("Daemon call failed, code %d (%s)",
+                      errno, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    // fork for second time according to APUE
+    pid_t pid = fork();
+    if(pid < 0) {
+        LOG_error("Second fork failed, code %d (%s)",
+                      errno, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    if(pid > 0)
+        exit(EXIT_SUCCESS);
+
+    umask(0);
+
+    /* create pid file */
+    if(pidfile == NULL)
+        pidfile = "/var/run/shadownsocks.pid";
+    if(!create_pidfile(pidfile)) {
+        LOG_error("Can't open pidfile: code %d (%s)",
+                       errno, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    /* register signal handler*/
+    struct sigaction action;
+    memset (&action, 0, sizeof(action));
+    action.sa_handler = signal_term_handler;
+
+    if (sigaction(SIGTERM, &action, 0)) {
+        LOG_error("Signal action registering error, code %d (%s)",
+                     errno, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+}
+
+static void display_usage(void)
+{
+    puts("USAGE: shadowsocks -s server -p port -l port -k pass [-f]\n"
+         "\t-s server: specify the remote server address\n"
+         "\t-p port: specify the remote server port\n"
+         "\t-l port: specify local listening port\n"
+         "\t-k pass: password to encrypt the data\n"
+         "\t-f: put the process to the background");
 }
 
 int main (int argc, char **argv)
