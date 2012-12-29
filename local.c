@@ -35,7 +35,7 @@ static char *_server;
 static char *_remote_port;
 static int   _timeout;
 static char *_key;
-=======
+
 /*#define SERVER "127.0.0.1"
 #define REMOTE_PORT "8388"
 #define PORT "1080"
@@ -59,7 +59,6 @@ struct client_ctx {
 	ev_io io;
 	int fd;
 };
->>>>>>> Fix a bug that considering a md5 sum as an integer must follow little endian manner
 
 int setnonblocking(int fd) {
     int flags;
@@ -207,7 +206,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
                 return;
             }
 
-            char addr_to_send[256];
+            unsigned char addr_to_send[256];
             unsigned char addr_len = 0;
             addr_to_send[addr_len++] = request->atyp;
 
@@ -630,14 +629,7 @@ int main (int argc, char **argv)
     opterr = 0;
 
     while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:")) != -1) {
-=======
-    int c;
-    int f_flags = 0;
 
-    opterr = 0;
-
-    while ((c = getopt (argc, argv, "fs:p:l:k:")) != -1) {
->>>>>>> Fix a bug that considering a md5 sum as an integer must follow little endian manner
         switch (c) {
             case 's':
                 server = optarg;
