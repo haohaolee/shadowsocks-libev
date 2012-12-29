@@ -37,6 +37,8 @@ static char *_remote_port;
 static int   _timeout;
 static char *_key;
 
+#define NAME "shadowsocks"
+
 /*#define SERVER "127.0.0.1"
 #define REMOTE_PORT "8388"
 #define PORT "1080"
