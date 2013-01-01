@@ -8,6 +8,8 @@
 #include <openssl/md5.h>
 #include <openssl/evp.h>
 
+#include "log.h"
+
 #define BUF_SIZE 4096
 
 #define TABLE 0
@@ -25,7 +27,7 @@ unsigned int _i;
 unsigned long long _a;
 int _method;
 
-#define LOGD(...) ((void)fprintf(stdout, __VA_ARGS__))
-#define LOGE(...) ((void)fprintf(stderr, __VA_ARGS__))
+#define LOGD(...) ((void)LOG_info(__VA_ARGS__))
+#define LOGE(...) ((void)LOG_error( __VA_ARGS__))
 
 #endif // _ENCRYPT_H

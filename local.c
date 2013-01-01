@@ -39,30 +39,6 @@ static char *_key;
 
 #define NAME "shadowsocks"
 
-/*#define SERVER "127.0.0.1"
-#define REMOTE_PORT "8388"
-#define PORT "1080"
-#define KEY "barfoo!"
-
-#define REPLY "HTTP/1.1 200 OK\n\nhello"
-*/
-#define min(a,b) \
-	({ typeof (a) _a = (a); \
-	 typeof (b) _b = (b); \
-	 _a < _b ? _a : _b; })
-
-// every watcher type has its own typedef'd struct
-// with the name ev_TYPE
-ev_io stdin_watcher;
-
-static char *_server;
-static char *_remote_port;
-
-struct client_ctx {
-	ev_io io;
-	int fd;
-};
-
 int setnonblocking(int fd) {
     int flags;
     if (-1 ==(flags = fcntl(fd, F_GETFL, 0)))
@@ -209,7 +185,7 @@ static void server_recv_cb (EV_P_ ev_io *w, int revents) {
                 return;
             }
 
-            unsigned char addr_to_send[256];
+            char addr_to_send[256];
             unsigned char addr_len = 0;
             addr_to_send[addr_len++] = request->atyp;
 
@@ -642,7 +618,7 @@ static void try_daemonize(const char* pidfile)
     //fork using daemon function
     if(daemon(0, 0) != 0) {
 
-        LOG_error("Daemon call failed, code %d (%s)",
+        LOGE("Daemon call failed, code %d (%s)",
                       errno, strerror(errno));
         exit(EXIT_FAILURE);
     }
@@ -650,7 +626,7 @@ static void try_daemonize(const char* pidfile)
     // fork for second time according to APUE
     pid_t pid = fork();
     if(pid < 0) {
-        LOG_error("Second fork failed, code %d (%s)",
+        LOGE("Second fork failed, code %d (%s)",
                       errno, strerror(errno));
         exit(EXIT_FAILURE);
     }
@@ -663,7 +639,7 @@ static void try_daemonize(const char* pidfile)
     if(pidfile == NULL)
         pidfile = "/var/run/"NAME".pid";
     if(!create_pidfile(pidfile)) {
-        LOG_error("Can't open pidfile: code %d (%s)",
+        LOGE("Can't open pidfile: code %d (%s)",
                        errno, strerror(errno));
         exit(EXIT_FAILURE);
     }
@@ -674,7 +650,7 @@ static void try_daemonize(const char* pidfile)
     action.sa_handler = signal_term_handler;
 
     if (sigaction(SIGTERM, &action, 0)) {
-        LOG_error("Signal action registering error, code %d (%s)",
+        LOGE("Signal action registering error, code %d (%s)",
                      errno, strerror(errno));
         exit(EXIT_FAILURE);
     }
@@ -689,7 +665,6 @@ static void print_usage() {
     printf("       encrypt_method:  table, rc4\n");
     printf("       pid_file:        valid path to the pid file\n");
 }
-
 
 int main (int argc, char **argv)
 {
@@ -707,7 +682,6 @@ int main (int argc, char **argv)
     opterr = 0;
 
     while ((c = getopt (argc, argv, "f:s:p:l:k:t:m:")) != -1) {
-
         switch (c) {
             case 's':
                 server = optarg;
@@ -744,7 +718,7 @@ int main (int argc, char **argv)
     LOG_init(NAME);
 
     if (f_flags) {
-        try_daemonize(0);
+        try_daemonize(f_path);
     }
     else {
         LOG_setStderrMode(1);
