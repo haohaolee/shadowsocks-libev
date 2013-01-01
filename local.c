@@ -718,6 +718,10 @@ int main (int argc, char **argv)
     LOG_init(NAME);
 
     if (f_flags) {
+        if (f_path == NULL) {
+            print_usage();
+            exit(EXIT_FAILURE);
+        }
         try_daemonize(f_path);
     }
     else {
