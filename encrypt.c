@@ -5,7 +5,12 @@
 #include <stdint.h>
 
 #include "encrypt.h"
+
+#ifdef WORDS_BIGENDIAN
 #include <endian.h>
+#else
+#define htole64(x)      (x)
+#endif
 
 static int random_compare(const void *_x, const void *_y) {
     uint32_t i = _i;
