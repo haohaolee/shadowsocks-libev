@@ -50,7 +50,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = ss$(EXEEXT)
+bin_PROGRAMS = ss$(EXEEXT) testencrypt$(EXEEXT)
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -71,6 +71,10 @@ PROGRAMS = $(bin_PROGRAMS)
 am_ss_OBJECTS = encrypt.$(OBJEXT) local.$(OBJEXT) log.$(OBJEXT)
 ss_OBJECTS = $(am_ss_OBJECTS)
 ss_LDADD = $(LDADD)
+am_testencrypt_OBJECTS = encrypt.$(OBJEXT) testencrypt.$(OBJEXT) \
+	log.$(OBJEXT)
+testencrypt_OBJECTS = $(am_testencrypt_OBJECTS)
+testencrypt_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -84,8 +88,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(ss_SOURCES)
-DIST_SOURCES = $(ss_SOURCES)
+SOURCES = $(ss_SOURCES) $(testencrypt_SOURCES)
+DIST_SOURCES = $(ss_SOURCES) $(testencrypt_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -226,6 +230,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ss_SOURCES = encrypt.c encrypt.h local.c local.h socks5.h log.h log.c
+testencrypt_SOURCES = encrypt.c encrypt.h testencrypt.c log.h log.c
 AM_CFLAGS = -Wall -fno-strict-aliasing
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -330,6 +335,9 @@ clean-binPROGRAMS:
 ss$(EXEEXT): $(ss_OBJECTS) $(ss_DEPENDENCIES) $(EXTRA_ss_DEPENDENCIES) 
 	@rm -f ss$(EXEEXT)
 	$(LINK) $(ss_OBJECTS) $(ss_LDADD) $(LIBS)
+testencrypt$(EXEEXT): $(testencrypt_OBJECTS) $(testencrypt_DEPENDENCIES) $(EXTRA_testencrypt_DEPENDENCIES) 
+	@rm -f testencrypt$(EXEEXT)
+	$(LINK) $(testencrypt_OBJECTS) $(testencrypt_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -340,6 +348,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/encrypt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/local.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testencrypt.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
