@@ -9,6 +9,7 @@ pid
 ss
 stamp-h1
 testencrypt
+aclocal.m4
 
 #	Do not edit the following section
 # 	Edit Compile Debug Document Distribute

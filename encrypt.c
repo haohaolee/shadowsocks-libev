@@ -6,11 +6,7 @@
 
 #include "encrypt.h"
 
-#ifdef WORDS_BIGENDIAN
-#include <endian.h>
-#else
-#define htole64(x)      (x)
-#endif
+#define OFFSET_ROL(p, o) ((u_int64_t)(*(p + o)) << (8 * o))
 
 static int random_compare(const void *_x, const void *_y) {
     uint32_t i = _i;
@@ -187,7 +183,9 @@ void get_table(const char *pass) {
     uint8_t *tmp_hash = MD5((unsigned char *) pass, strlen(pass), NULL);
     uint32_t i;
 
-    _a = htole64(*(uint64_t *) tmp_hash);
+    // compatible with big endian CPU
+    _a = OFFSET_ROL(tmp_hash, 0) + OFFSET_ROL(tmp_hash, 1) + OFFSET_ROL(tmp_hash, 2) + OFFSET_ROL(tmp_hash, 3) +
+        OFFSET_ROL(tmp_hash, 4) + OFFSET_ROL(tmp_hash, 5) + OFFSET_ROL(tmp_hash, 6) + OFFSET_ROL(tmp_hash, 7);
 
     enc_table = malloc(256);
     dec_table = malloc(256);
