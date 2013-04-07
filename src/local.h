@@ -3,9 +3,14 @@
 
 #include <ev.h>
 #include "encrypt.h"
+#include "jconf.h"
 
 struct listen_ctx {
 	ev_io io;
+    char **remote_host;
+    int remote_num;
+    char *remote_port;
+    int timeout;
 	int fd;
 	struct sockaddr sock;
 };
@@ -21,8 +26,8 @@ struct server {
 	char buf[BUF_SIZE]; // server send from, remote recv into
     char stage;
 	int buf_len;
-    EVP_CIPHER_CTX *e_ctx;
-    EVP_CIPHER_CTX *d_ctx;
+    struct rc4_state *e_ctx;
+    struct rc4_state *d_ctx;
 	struct server_ctx *recv_ctx;
 	struct server_ctx *send_ctx;
 	struct remote *remote;
@@ -45,7 +50,12 @@ struct remote {
 };
 
 
-struct remote* new_remote(int fd);
+static void accept_cb (EV_P_ ev_io *w, int revents);
+static void server_recv_cb (EV_P_ ev_io *w, int revents);
+static void server_send_cb (EV_P_ ev_io *w, int revents);
+static void remote_recv_cb (EV_P_ ev_io *w, int revents);
+static void remote_send_cb (EV_P_ ev_io *w, int revents);
+struct remote* new_remote(int fd, int timeout);
 void free_remote(struct remote *remote);
 void close_and_free_remote(EV_P_ struct remote *remote);
 struct server* new_server(int fd);

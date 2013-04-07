@@ -70,7 +70,7 @@
 #         compiler:		$LTCC
 #         compiler flags:		$LTCFLAGS
 #         linker:		$LD (gnu? $with_gnu_ld)
-#         $progname:	(GNU libtool) 2.4.2
+#         $progname:	(GNU libtool) 2.4.2 Debian-2.4.2-1ubuntu2
 #         automake:	$automake_version
 #         autoconf:	$autoconf_version
 #
@@ -80,7 +80,7 @@
 
 PROGRAM=libtool
 PACKAGE=libtool
-VERSION=2.4.2
+VERSION="2.4.2 Debian-2.4.2-1ubuntu2"
 TIMESTAMP=""
 package_revision=1.3337
 
@@ -805,6 +805,20 @@ func_split_short_opt ()
     func_split_short_opt_arg=`$ECHO "$1" | $SED "$my_sed_short_rest"`
 } # func_split_short_opt may be replaced by extended shell implementation
 
+
+# func_split_long_opt longopt
+# Set func_split_long_opt_name and func_split_long_opt_arg shell
+# variables after splitting LONGOPT at the `=' sign.
+func_split_long_opt ()
+{
+    my_sed_long_opt='1s/^\(--[^=]*\)=.*/\1/;q'
+    my_sed_long_arg='1s/^--[^=]*=//'
+
+    func_split_long_opt_name=`$ECHO "$1" | $SED "$my_sed_long_opt"`
+    func_split_long_opt_arg=`$ECHO "$1" | $SED "$my_sed_long_arg"`
+} # func_split_long_opt may be replaced by extended shell implementation
+
+exit_cmd=:
 
 # func_split_long_opt longopt
 # Set func_split_long_opt_name and func_split_long_opt_arg shell
@@ -6444,6 +6458,16 @@ func_mode_link ()
 	    # It is a libtool convenience library, so add in its objects.
 	    func_append convenience " $ladir/$objdir/$old_library"
 	    func_append old_convenience " $ladir/$objdir/$old_library"
+	    tmp_libs=
+	    for deplib in $dependency_libs; do
+	      deplibs="$deplib $deplibs"
+	      if $opt_preserve_dup_deps ; then
+		case "$tmp_libs " in
+		*" $deplib "*) func_append specialdeplibs " $deplib" ;;
+		esac
+	      fi
+	      func_append tmp_libs " $deplib"
+	    done
 	  elif test "$linkmode" != prog && test "$linkmode" != lib; then
 	    func_fatal_error "\`$lib' is not a convenience library"
 	  fi
